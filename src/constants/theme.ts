@@ -1,30 +1,122 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * ScheduleWith design tokens.
+ *
+ * The app is forest green on white (light) / dark gray (dark). Colors are read
+ * through `useTheme()` (see `@/hooks/use-theme`), which resolves the palette
+ * from the user's stored `darkMode` setting rather than from the system scheme.
  */
-
-import '@/global.css';
 
 import { Platform } from 'react-native';
 
-export const Colors = {
-  light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
-  },
-  dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
-  },
+/** The forest-green ramp. Shared by both schemes so brand color never shifts. */
+export const Forest = {
+  /** Deepest — pressed states, dark-mode text on light chips. */
+  900: '#122C21',
+  800: '#1B4332',
+  /** Primary brand color. Buttons, active accents. */
+  700: '#2D6A4F',
+  600: '#40916C',
+  500: '#52B788',
+  400: '#74C69D',
+  300: '#95D5B2',
+  200: '#B7E4C7',
+  100: '#D8F3DC',
 } as const;
 
-export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
+/** Non-brand accents used by the celebration / punishment screens. */
+export const Accent = {
+  gold: '#F2C14E',
+  amber: '#F0932B',
+  ember: '#E8590C',
+  sky: '#4CC9F0',
+  violet: '#9D4EDD',
+  rose: '#FF5D8F',
+  danger: '#D64545',
+  dangerDeep: '#8E2A2A',
+  rain: '#7A8B99',
+  storm: '#2B3440',
+} as const;
+
+/** Every color the UI can ask for, in both schemes. */
+export type Palette = {
+  text: string;
+  textSecondary: string;
+  textMuted: string;
+  onAccent: string;
+
+  background: string;
+  surface: string;
+  surfaceRaised: string;
+  surfacePressed: string;
+
+  border: string;
+  borderStrong: string;
+
+  accent: string;
+  accentSoft: string;
+  accentStrong: string;
+
+  danger: string;
+  glassFallback: string;
+  glassBorder: string;
+  scrim: string;
+};
+
+export type ThemeName = 'light' | 'dark';
+export type ThemeColor = keyof Palette;
+
+export const Colors: Record<ThemeName, Palette> = {
+  light: {
+    text: '#0B1F17',
+    textSecondary: '#4A5D54',
+    textMuted: '#7C8C84',
+    /** Text that sits on top of a filled forest-green surface. */
+    onAccent: '#FFFFFF',
+
+    background: '#FFFFFF',
+    /** Cards, rows, section wrappers. */
+    surface: '#F4F8F5',
+    surfaceRaised: '#FFFFFF',
+    surfacePressed: '#E7EFE9',
+
+    border: '#DCE7E0',
+    borderStrong: '#C3D5C9',
+
+    accent: Forest[700],
+    accentSoft: Forest[100],
+    accentStrong: Forest[800],
+
+    danger: Accent.danger,
+    /** Translucent fill behind the blur fallback for glass panels. */
+    glassFallback: 'rgba(255, 255, 255, 0.55)',
+    glassBorder: 'rgba(255, 255, 255, 0.85)',
+    /** Scrim behind modals and sheets. */
+    scrim: 'rgba(11, 31, 23, 0.35)',
+  },
+  dark: {
+    text: '#F2F7F3',
+    textSecondary: '#A9BCB1',
+    textMuted: '#7B8D83',
+    onAccent: '#FFFFFF',
+
+    background: '#1B1D1B',
+    surface: '#262926',
+    surfaceRaised: '#2F332F',
+    surfacePressed: '#373B37',
+
+    border: '#3A3F3A',
+    borderStrong: '#4C524C',
+
+    accent: Forest[500],
+    accentSoft: '#22362B',
+    accentStrong: Forest[600],
+
+    danger: '#F06767',
+    glassFallback: 'rgba(38, 41, 38, 0.55)',
+    glassBorder: 'rgba(255, 255, 255, 0.12)',
+    scrim: 'rgba(0, 0, 0, 0.5)',
+  },
+};
 
 export const Fonts = Platform.select({
   ios: {
@@ -43,13 +135,7 @@ export const Fonts = Platform.select({
     rounded: 'normal',
     mono: 'monospace',
   },
-  web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
-  },
-});
+})!;
 
 export const Spacing = {
   half: 2,
@@ -61,5 +147,26 @@ export const Spacing = {
   six: 64,
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
-export const MaxContentWidth = 800;
+export const Radius = {
+  sm: 10,
+  md: 16,
+  lg: 22,
+  xl: 30,
+  /** Big enough that any realistic row height renders as a full cylinder. */
+  pill: 999,
+} as const;
+
+export const Duration = {
+  fast: 140,
+  base: 240,
+  slow: 420,
+  celebration: 1600,
+} as const;
+
+/** Spring config for the satisfying tick / press feedback. */
+export const Springs = {
+  tick: { damping: 11, stiffness: 260, mass: 0.7 },
+  press: { damping: 18, stiffness: 340, mass: 0.6 },
+  sheet: { damping: 24, stiffness: 220, mass: 0.9 },
+  bouncy: { damping: 8, stiffness: 180, mass: 0.8 },
+} as const;

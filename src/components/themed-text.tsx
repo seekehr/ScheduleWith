@@ -1,73 +1,97 @@
-import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
+import { StyleSheet, Text, type TextProps } from 'react-native';
 
-import { Fonts, ThemeColor } from '@/constants/theme';
+import { Fonts, type ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
+export type TextVariant =
+  | 'display'
+  | 'title'
+  | 'heading'
+  | 'body'
+  | 'bodyBold'
+  | 'label'
+  | 'caption'
+  | 'overline'
+  | 'number';
+
 export type ThemedTextProps = TextProps & {
-  type?: 'default' | 'title' | 'small' | 'smallBold' | 'subtitle' | 'link' | 'linkPrimary' | 'code';
+  variant?: TextVariant;
   themeColor?: ThemeColor;
+  /** Overrides `themeColor` when you need a non-palette color (e.g. a tier hue). */
+  color?: string;
 };
 
-export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
+export function ThemedText({
+  style,
+  variant = 'body',
+  themeColor = 'text',
+  color,
+  ...rest
+}: ThemedTextProps) {
   const theme = useTheme();
 
   return (
     <Text
-      style={[
-        { color: theme[themeColor ?? 'text'] },
-        type === 'default' && styles.default,
-        type === 'title' && styles.title,
-        type === 'small' && styles.small,
-        type === 'smallBold' && styles.smallBold,
-        type === 'subtitle' && styles.subtitle,
-        type === 'link' && styles.link,
-        type === 'linkPrimary' && styles.linkPrimary,
-        type === 'code' && styles.code,
-        style,
-      ]}
+      style={[{ color: color ?? theme[themeColor] }, styles[variant], style]}
       {...rest}
     />
   );
 }
 
 const styles = StyleSheet.create({
-  small: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 500,
-  },
-  smallBold: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 700,
-  },
-  default: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: 500,
+  display: {
+    fontFamily: Fonts.rounded,
+    fontSize: 42,
+    lineHeight: 48,
+    fontWeight: '800',
+    letterSpacing: -1,
   },
   title: {
-    fontSize: 48,
-    fontWeight: 600,
-    lineHeight: 52,
+    fontFamily: Fonts.rounded,
+    fontSize: 30,
+    lineHeight: 36,
+    fontWeight: '800',
+    letterSpacing: -0.6,
   },
-  subtitle: {
-    fontSize: 32,
-    lineHeight: 44,
-    fontWeight: 600,
+  heading: {
+    fontFamily: Fonts.rounded,
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
-  link: {
-    lineHeight: 30,
+  body: {
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '500',
+  },
+  bodyBold: {
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '700',
+  },
+  label: {
     fontSize: 14,
+    lineHeight: 19,
+    fontWeight: '600',
   },
-  linkPrimary: {
-    lineHeight: 30,
-    fontSize: 14,
-    color: '#3c87f7',
-  },
-  code: {
-    fontFamily: Fonts.mono,
-    fontWeight: Platform.select({ android: 700 }) ?? 500,
+  caption: {
     fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '600',
+  },
+  overline: {
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '800',
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+  },
+  number: {
+    fontFamily: Fonts.rounded,
+    fontSize: 18,
+    lineHeight: 22,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
   },
 });

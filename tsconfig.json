@@ -9,7 +9,11 @@
       "@/assets/*": [
         "./assets/*"
       ]
-    }
+    },
+    "types": [
+      "node",
+      "react"
+    ]
   },
   "include": [
     "**/*.ts",
