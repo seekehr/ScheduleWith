@@ -163,10 +163,22 @@ export const Duration = {
   celebration: 1600,
 } as const;
 
-/** Spring config for the satisfying tick / press feedback. */
+/**
+ * Spring configs for feedback.
+ *
+ * Damping is the dial that matters: below about 12 a spring visibly wobbles
+ * several times before settling, which reads as a shake on anything the user
+ * triggers repeatedly. `bouncy` keeps that deliberately — it is reserved for
+ * one-off showpieces (the welcome orb, the level-up banner, the celebration
+ * figure) where the overshoot is the point.
+ */
 export const Springs = {
-  tick: { damping: 11, stiffness: 260, mass: 0.7 },
+  /** Ticking a task. Lively, but settles in a single soft overshoot. */
+  tick: { damping: 17, stiffness: 300, mass: 0.6 },
   press: { damping: 18, stiffness: 340, mass: 0.6 },
   sheet: { damping: 24, stiffness: 220, mass: 0.9 },
+  /** Arrives and stops. No overshoot at all. */
+  settle: { damping: 22, stiffness: 170, mass: 0.9 },
+  /** Showpiece only — overshoots hard on purpose. */
   bouncy: { damping: 8, stiffness: 180, mass: 0.8 },
 } as const;

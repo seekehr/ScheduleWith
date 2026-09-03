@@ -36,7 +36,9 @@ export function Figure({ mood, size = 170, shockwaves = 0, colors }: FigureProps
   const entrance = useSharedValue(0);
 
   useEffect(() => {
-    entrance.value = withDelay(80, withSpring(1, Springs.bouncy));
+    // The celebration keeps its overshoot; the punishment screen should not
+    // spring in cheerfully, and a bounce there read as a shake.
+    entrance.value = withDelay(80, withSpring(1, happy ? Springs.bouncy : Springs.settle));
     bob.value = withRepeat(
       withSequence(
         withTiming(1, {

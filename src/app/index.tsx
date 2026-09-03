@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppButton } from '@/components/app-button';
@@ -264,7 +264,7 @@ function Section({
   const theme = useTheme();
 
   return (
-    <Animated.View layout={LinearTransition.springify().damping(22)} style={styles.section}>
+    <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <ThemedText variant="overline" themeColor="textSecondary">
           {title}
@@ -294,7 +294,7 @@ function Section({
           />
         ))
       )}
-    </Animated.View>
+    </View>
   );
 }
 

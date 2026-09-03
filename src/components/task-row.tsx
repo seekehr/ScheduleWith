@@ -9,7 +9,6 @@ import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   FadeIn,
-  LinearTransition,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -43,8 +42,14 @@ export function TaskRow({ task, description, completed, onToggle, onLongPress }:
     onToggle(task.id);
   }, [completed, onToggle, task.id]);
 
+  // No layout animation here on purpose. Moving between To-Do and Completed
+  // unmounts the row from one list and remounts it in the other, so a layout
+  // transition never animated the move itself — it only made every *other* row
+  // slide, while the section containers resized underneath them. Two nested
+  // layout animations fighting read as a shake. The re-order is instant now;
+  // the tick, the haptic and the XP burst carry the feedback.
   return (
-    <Animated.View layout={LinearTransition.springify().damping(20)} entering={FadeIn.duration(220)}>
+    <Animated.View entering={FadeIn.duration(160)}>
       <PressableScale
         onPress={handlePress}
         onLongPress={onLongPress ? () => onLongPress(task.id) : undefined}

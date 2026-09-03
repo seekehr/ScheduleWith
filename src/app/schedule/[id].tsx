@@ -17,7 +17,7 @@ import { PressableScale } from '@/components/pressable-scale';
 import { ScreenHeader } from '@/components/screen-header';
 import { TaskEditorSheet } from '@/components/task-editor-sheet';
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing } from '@/constants/theme';
+import { Duration, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAppState, useDispatch } from '@/store/app-store';
 import { makeSchedule } from '@/store/reducer';
@@ -211,7 +211,7 @@ export default function ScheduleEditorScreen() {
                 schedule.tasks.map((task, index) => (
                   <Animated.View
                     key={task.id}
-                    layout={LinearTransition.springify().damping(20)}
+                    layout={LinearTransition.duration(Duration.base)}
                     entering={FadeIn.duration(200)}>
                     <EditableTaskRow
                       task={task}

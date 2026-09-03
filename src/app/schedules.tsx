@@ -8,7 +8,7 @@ import { AppButton } from '@/components/app-button';
 import { PressableScale } from '@/components/pressable-scale';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing } from '@/constants/theme';
+import { Duration, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAppState, useDispatch } from '@/store/app-store';
 import { exportSchedule, importSchedule } from '@/store/transfer';
@@ -62,7 +62,7 @@ export default function SchedulesScreen() {
             schedules.map((schedule, index) => (
               <Animated.View
                 key={schedule.id}
-                layout={LinearTransition.springify().damping(20)}
+                layout={LinearTransition.duration(Duration.base)}
                 entering={FadeIn.duration(220)}>
                 <ScheduleCard
                   schedule={schedule}
