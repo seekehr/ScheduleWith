@@ -44,6 +44,13 @@ export type DayRecord = {
   xpEarned: number;
   outcome: DayOutcome;
   startedAt: number;
+  /**
+   * The real instant this day stops being "today", fixed when the day is
+   * created. Stored rather than re-derived: if expiry were recomputed from the
+   * current `dayEndsAt` setting, changing that setting would silently look like
+   * time had passed, and a day could be "completed" twice over in one sitting.
+   */
+  expiresAt: number;
   closedAt?: number;
 };
 

@@ -6,12 +6,7 @@
  */
 
 import { dayCompletionBonus } from '@/store/leveling';
-import {
-  daysBetween,
-  isConsecutive,
-  logicalDateKey,
-  nextDateKey,
-} from '@/store/day';
+import { isConsecutive, logicalDateKey, nextBoundaryAfter, nextDateKey } from '@/store/day';
 import { makeId } from '@/store/storage';
 import {
   createInitialState,
@@ -74,7 +69,22 @@ export function reducer(state: AppState, action: Action): AppState {
       const settings = { ...state.settings, ...action.patch };
       // The hourly reminder is a sub-setting: it cannot outlive its parent.
       if (!settings.notifications) settings.hourlyReminders = false;
-      return { ...state, settings };
+
+      // Moving the day-end boundary re-anchors the running day, but must never
+      // change which day it *is*. Re-dating it here would make the change look
+      // like a day had elapsed, handing out a free streak increment.
+      // Measured from when the day began, so moving the boundary to a time
+      // that has already passed ends the running day now, while moving it
+      // later simply gives that day more room.
+      const today =
+        state.today && settings.dayEndsAt !== state.settings.dayEndsAt
+          ? {
+              ...state.today,
+              expiresAt: nextBoundaryAfter(state.today.startedAt, settings.dayEndsAt),
+            }
+          : state.today;
+
+      return { ...state, settings, today };
     }
 
     case 'addSchedule': {
@@ -190,7 +200,12 @@ export function reducer(state: AppState, action: Action): AppState {
 /* Day lifecycle                                                              */
 /* -------------------------------------------------------------------------- */
 
-export function snapshotDay(schedule: Schedule, date: string, now: number): DayRecord {
+export function snapshotDay(
+  schedule: Schedule,
+  date: string,
+  now: number,
+  dayEndsAt: string
+): DayRecord {
   return {
     date,
     scheduleId: schedule.id,
@@ -200,7 +215,40 @@ export function snapshotDay(schedule: Schedule, date: string, now: number): DayR
     xpEarned: 0,
     outcome: 'pending',
     startedAt: now,
+    expiresAt: nextBoundaryAfter(now, dayEndsAt),
   };
+}
+
+/**
+ * Where the day after `previous` lands, and how many whole days were skipped
+ * getting there.
+ *
+ * Walks real day-windows forward rather than deriving a key from the clock, so
+ * the calendar can only advance when time actually passes. A day closed before
+ * it expired — the manual "Just Woke Up" reset — stays on the same date, which
+ * is what stops repeated resets from inflating the streak.
+ */
+function advanceDay(
+  previous: DayRecord,
+  now: number,
+  dayEndsAt: string
+): { key: string; skipped: number } {
+  if (now < previous.expiresAt) return { key: previous.date, skipped: 0 };
+
+  // Count the boundaries that came and went after this day's own, each one a
+  // whole day nobody was here for.
+  let boundary = previous.expiresAt;
+  let skipped = 0;
+
+  // Bounded so a wildly wrong device clock can't spin here.
+  while (skipped < HISTORY_LIMIT) {
+    const next = nextBoundaryAfter(boundary, dayEndsAt);
+    if (now < next) break;
+    boundary = next;
+    skipped += 1;
+  }
+
+  return { key: nextDateKey(previous.date, skipped + 1), skipped };
 }
 
 /**
@@ -216,25 +264,33 @@ function syncDay(state: AppState, now: number): AppState {
     return state.today === null ? state : { ...state, today: null };
   }
 
-  const key = logicalDateKey(now, state.settings.dayEndsAt);
+  const dayEndsAt = state.settings.dayEndsAt;
   const today = state.today;
 
   if (!today) {
-    return { ...state, today: snapshotDay(active, key, now), graceUntil: undefined };
+    const key = logicalDateKey(now, dayEndsAt);
+    return {
+      ...state,
+      today: snapshotDay(active, key, now, dayEndsAt),
+      graceUntil: undefined,
+    };
   }
+
+  // Expired days are left alone so the overlay can react to them. This is
+  // checked before the schedule swap below: otherwise switching schedules would
+  // quietly discard an unfinished day, dodging the punishment screen and
+  // keeping a streak that should have been broken.
+  if (now >= today.expiresAt) return state;
 
   // The active schedule changed underneath us: restart the day on the new one,
   // keeping any XP already banked (it lives in profile.totalXp regardless).
   if (today.scheduleId !== active.id) {
     return {
       ...state,
-      today: { ...snapshotDay(active, key, now), xpEarned: today.xpEarned },
+      today: { ...snapshotDay(active, today.date, now, dayEndsAt), xpEarned: today.xpEarned },
       celebratedDate: undefined,
     };
   }
-
-  // Expired days are left alone so the overlay can react to them.
-  if (today.date !== key) return state;
 
   return { ...state, today: mergeScheduleEdits(today, active) };
 }
@@ -282,9 +338,13 @@ function mergeScheduleEdits(today: DayRecord, schedule: Schedule): DayRecord {
  * the history stays honest.
  */
 function startNewDay(state: AppState, now: number): AppState {
-  const key = logicalDateKey(now, state.settings.dayEndsAt);
+  const dayEndsAt = state.settings.dayEndsAt;
   const previous = state.today;
   const active = state.schedules.find((schedule) => schedule.id === state.activeScheduleId);
+
+  const { key, skipped } = previous
+    ? advanceDay(previous, now, dayEndsAt)
+    : { key: logicalDateKey(now, dayEndsAt), skipped: 0 };
 
   let profile = state.profile;
   const closedRecords: DayRecord[] = [];
@@ -319,19 +379,20 @@ function startNewDay(state: AppState, now: number): AppState {
     }
 
     // Days that elapsed while the app was closed.
-    const gap = daysBetween(previous.date, key);
-    for (let offset = 1; offset < gap; offset += 1) {
+    for (let offset = 1; offset <= skipped; offset += 1) {
+      const date = nextDateKey(previous.date, offset);
       closedRecords.push({
         ...previous,
-        date: nextDateKey(previous.date, offset),
+        date,
         completedIds: [],
         xpEarned: 0,
         outcome: 'missed',
         startedAt: now,
+        expiresAt: nextBoundaryAfter(now, dayEndsAt),
         closedAt: now,
       });
     }
-    if (gap > 1) profile = { ...profile, streak: 0 };
+    if (skipped > 0) profile = { ...profile, streak: 0 };
   }
 
   return {
@@ -339,7 +400,7 @@ function startNewDay(state: AppState, now: number): AppState {
     profile,
     // `closedRecords` is oldest-first; history is newest-first.
     history: [...closedRecords.reverse(), ...state.history].slice(0, HISTORY_LIMIT),
-    today: active ? snapshotDay(active, key, now) : null,
+    today: active ? snapshotDay(active, key, now, dayEndsAt) : null,
     graceUntil: undefined,
     celebratedDate: undefined,
   };
@@ -358,8 +419,7 @@ export function dayStatus(state: AppState, now: number): DayStatus {
 
   if (today.completedIds.length >= today.tasks.length) return 'complete';
 
-  const expired = today.date !== logicalDateKey(now, state.settings.dayEndsAt);
-  if (!expired) return 'active';
+  if (now < today.expiresAt) return 'active';
 
   return state.graceUntil !== undefined && now < state.graceUntil ? 'grace' : 'expired';
 }

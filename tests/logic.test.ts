@@ -465,6 +465,129 @@ check('moveSchedule reorders and refuses to run off either end', () => {
   assert.equal(reducer(state, { type: 'moveSchedule', id: 's1', direction: -1 }), state);
 });
 
+check('a day is only closed once its real boundary has passed', () => {
+  const morning = at(2026, 9, 4, 9);
+  let state = boot([task('a', 10)], morning);
+  // Manual "Just Woke Up" hours before the 02:00 boundary: same day, no streak.
+  state = run(
+    state,
+    { type: 'toggleTask', taskId: 'a' },
+    { type: 'startNewDay', now: at(2026, 9, 4, 10) }
+  );
+  assert.equal(state.today?.date, '2026-09-04', 'still the same logical day');
+  assert.equal(state.profile.streak, 1);
+
+  // And again, and again. None of these are new days.
+  for (const hour of [11, 12, 13]) {
+    state = run(
+      state,
+      { type: 'toggleTask', taskId: 'a' },
+      { type: 'startNewDay', now: at(2026, 9, 4, hour) }
+    );
+  }
+  assert.equal(state.profile.streak, 1, 'repeated resets in one sitting are one day');
+  assert.equal(state.profile.bestStreak, 1);
+});
+
+check('REGRESSION: changing the day-end time cannot manufacture a streak', () => {
+  // Reported as "why does it say 2d best when I started an hour ago" — moving
+  // the boundary used to shift the logical date, which read as a day elapsing.
+  const justAfterMidnight = at(2026, 9, 5, 0, 30);
+  let state = boot([task('a', 10)], justAfterMidnight);
+
+  state = run(
+    state,
+    { type: 'toggleTask', taskId: 'a' },
+    { type: 'startNewDay', now: justAfterMidnight + 60_000 }
+  );
+  assert.equal(state.profile.streak, 1);
+
+  // Nudging the setting must not advance the calendar.
+  for (const dayEndsAt of ['00:00', '23:00', '01:00', '12:00']) {
+    state = run(
+      state,
+      { type: 'patchSettings', patch: { dayEndsAt } },
+      { type: 'syncDay', now: justAfterMidnight + 120_000 },
+      ...(state.today?.tasks ?? []).map(
+        (entry) => ({ type: 'toggleTask', taskId: entry.id }) as Action
+      ),
+      { type: 'startNewDay', now: justAfterMidnight + 180_000 }
+    );
+  }
+
+  assert.equal(state.profile.streak, 1, 'no free days from moving the boundary');
+  assert.equal(state.profile.bestStreak, 1);
+});
+
+check('moving the day end to a moment the running day has already passed ends it', () => {
+  // The day begins at 09:00.
+  let state = boot([task('a', 10)], at(2026, 9, 4, 9));
+  const now = at(2026, 9, 4, 15, 0);
+  assert.equal(dayStatus(state, now), 'active');
+
+  // At 15:00, "my day ends at 14:00" names a moment this day already went past.
+  state = run(state, { type: 'patchSettings', patch: { dayEndsAt: '14:00' } });
+  assert.equal(dayStatus(state, now), 'expired');
+});
+
+check('a day end set just ahead of now expires shortly, not a day later', () => {
+  // How the punishment screen gets tested by hand.
+  let state = boot([task('a', 10)], at(2026, 9, 4, 9));
+  const now = at(2026, 9, 4, 15, 0);
+
+  state = run(state, { type: 'patchSettings', patch: { dayEndsAt: '15:02' } });
+  assert.equal(dayStatus(state, now), 'active', 'not yet');
+  assert.equal(dayStatus(state, at(2026, 9, 4, 15, 3)), 'expired', 'three minutes later, yes');
+});
+
+check('a day end set before the day started lands on the next occurrence', () => {
+  // Day begins at 15:00; "ends at 14:00" can only mean tomorrow's 14:00.
+  let state = boot([task('a', 10)], at(2026, 9, 4, 15));
+  state = run(state, { type: 'patchSettings', patch: { dayEndsAt: '14:00' } });
+
+  assert.equal(dayStatus(state, at(2026, 9, 4, 23)), 'active');
+  assert.equal(dayStatus(state, at(2026, 9, 5, 13)), 'active');
+  assert.equal(dayStatus(state, at(2026, 9, 5, 15)), 'expired');
+});
+
+check('moving the day end later gives the running day more room', () => {
+  const now = at(2026, 9, 4, 15, 0);
+  let state = boot([task('a', 10)], now);
+  const before = state.today!.expiresAt;
+
+  state = run(state, { type: 'patchSettings', patch: { dayEndsAt: '23:00' } });
+  assert.ok(state.today!.expiresAt > now, 'still live');
+  assert.notEqual(state.today!.expiresAt, before, 're-anchored to the new boundary');
+  assert.equal(state.today?.date, '2026-09-04', 'but it is still the same day');
+});
+
+check('REGRESSION: switching schedules cannot dodge an expired day', () => {
+  let state = boot([task('a', 10)], at(2026, 9, 4, 9));
+  state = run(
+    state,
+    { type: 'toggleTask', taskId: 'a' },
+    { type: 'startNewDay', now: at(2026, 9, 5, 3) }
+  );
+  assert.equal(state.profile.streak, 1);
+
+  // Let the next day lapse unfinished, then try to escape it by switching.
+  const later = at(2026, 9, 6, 12);
+  const other = { ...makeSchedule('Evening'), id: 'sched-2', tasks: [task('z', 25)] };
+  state = run(
+    state,
+    { type: 'syncDay', now: later },
+    { type: 'addSchedule', schedule: other },
+    { type: 'setActiveSchedule', id: 'sched-2' },
+    { type: 'syncDay', now: later }
+  );
+
+  assert.equal(dayStatus(state, later), 'expired', 'the lapsed day still has to be faced');
+
+  state = run(state, { type: 'startNewDay', now: later });
+  assert.equal(state.profile.streak, 0, 'and it still breaks the streak');
+  assert.equal(state.history[0].outcome, 'missed');
+});
+
 check('resetEverything wipes data but keeps the chosen theme', () => {
   let state = boot([task('a', 10)], at(2026, 9, 4, 9));
   state = run(

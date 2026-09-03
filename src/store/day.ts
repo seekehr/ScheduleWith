@@ -62,6 +62,21 @@ export function logicalDayEnd(key: string, dayEndsAt: string): number {
   return start.getTime() + parseDayEnd(dayEndsAt) * MS_PER_MINUTE;
 }
 
+/**
+ * The first instant strictly after `from` whose clock time is `dayEndsAt`.
+ *
+ * This is what actually ends a day. Deriving expiry from the day's *date* would
+ * mean that shortening the day-end time pushed the boundary a full day away
+ * instead of bringing it closer, which is the opposite of what the setting says.
+ */
+export function nextBoundaryAfter(from: number, dayEndsAt: string): number {
+  const source = new Date(from);
+  const boundary = new Date(source.getFullYear(), source.getMonth(), source.getDate(), 0, 0, 0, 0);
+  boundary.setMinutes(parseDayEnd(dayEndsAt));
+  if (boundary.getTime() <= from) boundary.setDate(boundary.getDate() + 1);
+  return boundary.getTime();
+}
+
 /** Whole logical days between two keys (`b - a`). Negative if `b` precedes `a`. */
 export function daysBetween(a: string, b: string): number {
   return Math.round((fromKey(b).getTime() - fromKey(a).getTime()) / MS_PER_DAY);

@@ -8,6 +8,8 @@
 
 import Storage from 'expo-sqlite/kv-store';
 
+import { nextBoundaryAfter } from '@/store/day';
+
 import {
   createInitialState,
   DEFAULT_PROFILE,
@@ -80,13 +82,17 @@ function migrate(input: unknown, fallbackDarkMode: boolean): AppState {
 
   const profileInput = isRecord(input.profile) ? input.profile : {};
   const settingsInput = isRecord(input.settings) ? input.settings : {};
+  const dayEndsAt = asString(settingsInput.dayEndsAt, DEFAULT_SETTINGS.dayEndsAt);
 
   return {
     version: 1,
     schedules,
     activeScheduleId,
-    today: parseDayRecord(input.today),
-    history: asArray(input.history).map(parseDayRecord).filter(isPresent).slice(0, HISTORY_LIMIT),
+    today: parseDayRecord(input.today, dayEndsAt),
+    history: asArray(input.history)
+      .map((record) => parseDayRecord(record, dayEndsAt))
+      .filter(isPresent)
+      .slice(0, HISTORY_LIMIT),
     profile: {
       displayName: asString(profileInput.displayName, DEFAULT_PROFILE.displayName).slice(0, 40),
       avatarUri: optionalString(profileInput.avatarUri),
@@ -98,7 +104,7 @@ function migrate(input: unknown, fallbackDarkMode: boolean): AppState {
     },
     settings: {
       darkMode: typeof settingsInput.darkMode === 'boolean' ? settingsInput.darkMode : fallbackDarkMode,
-      dayEndsAt: asString(settingsInput.dayEndsAt, DEFAULT_SETTINGS.dayEndsAt),
+      dayEndsAt,
       notifications: settingsInput.notifications === true,
       hourlyReminders: settingsInput.hourlyReminders === true,
     },
@@ -133,7 +139,7 @@ function parseTask(input: unknown): Task | null {
   };
 }
 
-function parseDayRecord(input: unknown): DayRecord | null {
+function parseDayRecord(input: unknown, dayEndsAt: string): DayRecord | null {
   if (!isRecord(input)) return null;
   const date = asString(input.date, '');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
@@ -162,6 +168,15 @@ function parseDayRecord(input: unknown): DayRecord | null {
     xpEarned: asCount(input.xpEarned),
     outcome: outcome === 'success' || outcome === 'missed' ? outcome : 'pending',
     startedAt: typeof input.startedAt === 'number' ? input.startedAt : Date.now(),
+    // Records written before days carried their own expiry fall back to the
+    // boundary their date implies under the current setting.
+    expiresAt:
+      typeof input.expiresAt === 'number'
+        ? input.expiresAt
+        : nextBoundaryAfter(
+            typeof input.startedAt === 'number' ? input.startedAt : Date.now(),
+            dayEndsAt
+          ),
     closedAt: typeof input.closedAt === 'number' ? input.closedAt : undefined,
   };
 }

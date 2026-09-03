@@ -16,7 +16,6 @@ import {
 import { AppState as RNAppState, Appearance } from 'react-native';
 
 import { levelFromXp, streakTier, type LevelInfo, type StreakTier } from '@/store/leveling';
-import { logicalDayEnd } from '@/store/day';
 import { dayStatus, reducer, type Action, type DayStatus } from '@/store/reducer';
 import { loadState, loadStateSync, saveState } from '@/store/storage';
 import { createInitialState, type AppState, type DayRecord, type Schedule } from '@/store/types';
@@ -191,8 +190,8 @@ export function useTimeLeft(): number {
   const { state, now } = useStore();
   return useMemo(() => {
     if (!state.today) return 0;
-    return Math.max(0, logicalDayEnd(state.today.date, state.settings.dayEndsAt) - now);
-  }, [state.today, state.settings.dayEndsAt, now]);
+    return Math.max(0, state.today.expiresAt - now);
+  }, [state.today, now]);
 }
 
 /** Progress through today's checklist, as counts and a 0-1 ratio. */
