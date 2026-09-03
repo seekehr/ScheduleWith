@@ -13,8 +13,6 @@ export type AppButtonProps = {
   onPress?: () => void;
   variant?: ButtonVariant;
   size?: ButtonSize;
-  /** Leading glyph, usually an emoji or a symbol character. */
-  icon?: string;
   disabled?: boolean;
   fullWidth?: boolean;
   haptic?: HapticStyle;
@@ -26,7 +24,6 @@ export function AppButton({
   onPress,
   variant = 'primary',
   size = 'md',
-  icon,
   disabled,
   fullWidth,
   haptic = 'medium',
@@ -59,11 +56,6 @@ export function AppButton({
         style,
       ]}>
       <View style={styles.content}>
-        {icon ? (
-          <ThemedText variant={size === 'lg' ? 'heading' : 'body'} color={labelColor}>
-            {icon}
-          </ThemedText>
-        ) : null}
         <ThemedText
           variant={size === 'lg' ? 'heading' : 'bodyBold'}
           color={labelColor}

@@ -9,7 +9,6 @@ import { BottomSheet, SheetAction } from '@/components/bottom-sheet';
 import { Fab } from '@/components/fab';
 import { GlassPanel } from '@/components/glass-panel';
 import { ProfileHeader } from '@/components/profile-header';
-import { SwipeUpHandle } from '@/components/swipe-up-handle';
 import { TaskRow } from '@/components/task-row';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
@@ -94,7 +93,7 @@ export default function HomeScreen() {
     <View style={[styles.root, { backgroundColor: theme.background }]}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.headerArea}>
-          <ProfileHeader onPress={() => router.push('/settings')} />
+          <ProfileHeader onPress={() => setNavOpen(true)} />
         </View>
 
         <ScrollView
@@ -103,7 +102,6 @@ export default function HomeScreen() {
           {activeSchedule ? (
             <DayMeta
               scheduleName={activeSchedule.name}
-              emoji={activeSchedule.emoji}
               timeLeft={timeLeft}
               done={progress.done}
               total={progress.total}
@@ -139,7 +137,7 @@ export default function HomeScreen() {
 
               {allDone && celebrationDismissed ? (
                 <AppButton
-                  label="Wrap up the day 🎉"
+                  label="Wrap up the day"
                   size="lg"
                   fullWidth
                   haptic="success"
@@ -160,8 +158,6 @@ export default function HomeScreen() {
             </>
           )}
         </ScrollView>
-
-        <SwipeUpHandle onOpen={() => setNavOpen(true)} />
       </SafeAreaView>
 
       <View style={styles.fabSlot} pointerEvents="box-none">
@@ -170,7 +166,6 @@ export default function HomeScreen() {
 
       <BottomSheet visible={navOpen} onClose={() => setNavOpen(false)} title="Menu">
         <SheetAction
-          icon="🗂"
           label="Other schedules"
           hint={`${schedules.length} saved`}
           onPress={() => {
@@ -179,7 +174,6 @@ export default function HomeScreen() {
           }}
         />
         <SheetAction
-          icon="⚙️"
           label="Settings"
           hint="Profile, theme, notifications"
           onPress={() => {
@@ -194,19 +188,16 @@ export default function HomeScreen() {
         onClose={() => setActionsOpen(false)}
         title="Schedules">
         <SheetAction
-          icon="✨"
           label="Create New Schedule"
           hint="Start a fresh checklist"
           onPress={() => openEditor('new')}
         />
         <SheetAction
-          icon="📥"
           label="Load Schedule"
           hint="Import a .json file"
           onPress={() => void handleImport()}
         />
         <SheetAction
-          icon="📤"
           label="Export Schedule as JSON"
           hint={activeSchedule ? `Share "${activeSchedule.name}"` : 'No active schedule'}
           onPress={() => void handleExport()}
@@ -220,13 +211,11 @@ export default function HomeScreen() {
 
 function DayMeta({
   scheduleName,
-  emoji,
   timeLeft,
   done,
   total,
 }: {
   scheduleName: string;
-  emoji?: string;
   timeLeft: number;
   done: number;
   total: number;
@@ -238,7 +227,6 @@ function DayMeta({
           Active schedule
         </ThemedText>
         <ThemedText variant="heading" numberOfLines={1}>
-          {emoji ? `${emoji} ` : ''}
           {scheduleName}
         </ThemedText>
       </View>
@@ -310,6 +298,20 @@ function Section({
   );
 }
 
+/** A drawn stand-in for an illustration — a soft ring around the brand mark. */
+function EmptyMark() {
+  const theme = useTheme();
+  return (
+    <View style={[styles.emptyMark, { borderColor: theme.border }]}>
+      <View style={[styles.emptyMarkCore, { backgroundColor: theme.accentSoft }]}>
+        <ThemedText variant="title" themeColor="accent">
+          ✓
+        </ThemedText>
+      </View>
+    </View>
+  );
+}
+
 function EmptyState({
   title,
   body,
@@ -323,9 +325,7 @@ function EmptyState({
 }) {
   return (
     <View style={styles.empty}>
-      <ThemedText variant="display" style={styles.emptyGlyph}>
-        🌱
-      </ThemedText>
+      <EmptyMark />
       <ThemedText variant="heading" style={styles.centered}>
         {title}
       </ThemedText>
@@ -348,7 +348,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: Spacing.three,
-    paddingBottom: Spacing.six + Spacing.four,
+    // Enough to clear the floating action button rather than scroll under it.
+    paddingBottom: Spacing.six * 2,
     gap: Spacing.four,
   },
 
@@ -395,9 +396,21 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.six,
     paddingHorizontal: Spacing.three,
   },
-  emptyGlyph: {
-    fontSize: 56,
-    lineHeight: 66,
+  emptyMark: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.two,
+  },
+  emptyMarkCore: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyAction: {
     marginTop: Spacing.three,

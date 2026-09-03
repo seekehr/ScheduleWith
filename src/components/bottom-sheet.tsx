@@ -1,13 +1,17 @@
 /**
- * A pan-dismissable bottom sheet, used for both the swipe-up navbar and the
- * FAB's action menu.
+ * A pan-dismissable bottom sheet: the app's menu, the FAB's actions, and the
+ * task editor all live in one.
  *
  * Rendered inline (not in a `Modal`) so gestures, the blur behind it and the
  * app's own theming all behave predictably.
+ *
+ * The drag-to-dismiss gesture is confined to the grabber at the top rather than
+ * the whole panel, so the content below it stays free to scroll — which it
+ * needs to be once the keyboard is up and the sheet has far less room.
  */
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Keyboard, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   interpolate,
@@ -23,6 +27,7 @@ import { GlassPanel } from '@/components/glass-panel';
 import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
 import { Duration, Radius, Spacing, Springs } from '@/constants/theme';
+import { useKeyboard } from '@/hooks/use-keyboard';
 import { useTheme } from '@/hooks/use-theme';
 
 /** Drag further than this (or flick faster) and the sheet closes. */
@@ -40,6 +45,7 @@ export function BottomSheet({ visible, onClose, title, children }: BottomSheetPr
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
+  const keyboard = useKeyboard();
 
   // Kept mounted for the duration of the exit animation.
   const [mounted, setMounted] = useState(visible);
@@ -61,6 +67,20 @@ export function BottomSheet({ visible, onClose, title, children }: BottomSheetPr
     }
   }, [visible, progress, drag]);
 
+  /**
+   * Tapping the backdrop dismisses the keyboard first and only closes the sheet
+   * on a second tap. Without this, reaching for anywhere outside a multi-line
+   * field — the only way to put that keyboard away — threw the whole form away
+   * with it.
+   */
+  const handleBackdropPress = useCallback(() => {
+    if (keyboard.visible) {
+      Keyboard.dismiss();
+      return;
+    }
+    onClose();
+  }, [keyboard.visible, onClose]);
+
   const close = useCallback(() => onClose(), [onClose]);
 
   const pan = Gesture.Pan()
@@ -79,9 +99,25 @@ export function BottomSheet({ visible, onClose, title, children }: BottomSheetPr
     opacity: progress.value * interpolate(drag.value, [0, sheetHeight], [1, 0.2], 'clamp'),
   }));
 
+  // The sheet is pinned to the bottom of the screen, so it has to ride up with
+  // the keyboard or the fields end up underneath it.
+  const lift = useSharedValue(0);
+  useEffect(() => {
+    lift.value = withSpring(keyboard.height, Springs.sheet);
+  }, [lift, keyboard.height]);
+
   const sheetStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: (1 - progress.value) * sheetHeight + drag.value }],
+    transform: [
+      { translateY: (1 - progress.value) * sheetHeight + drag.value - lift.value },
+    ],
   }));
+
+  // Whatever is left of the screen once the keyboard and the status bar have
+  // taken their share. Without this the task editor runs off the top.
+  const contentMaxHeight = Math.max(
+    220,
+    screenHeight - keyboard.height - insets.top - Spacing.six * 2
+  );
 
   if (!mounted) return null;
 
@@ -90,8 +126,8 @@ export function BottomSheet({ visible, onClose, title, children }: BottomSheetPr
       <Animated.View style={[StyleSheet.absoluteFill, backdropStyle]}>
         <PressableScale
           accessibilityRole="button"
-          accessibilityLabel="Close"
-          onPress={close}
+          accessibilityLabel={keyboard.visible ? 'Dismiss keyboard' : 'Close'}
+          onPress={handleBackdropPress}
           haptic="light"
           scaleTo={1}
           dimTo={1}
@@ -102,19 +138,30 @@ export function BottomSheet({ visible, onClose, title, children }: BottomSheetPr
       <Animated.View
         style={[styles.sheetWrapper, sheetStyle]}
         onLayout={(event) => setSheetHeight(event.nativeEvent.layout.height)}>
-        <GestureDetector gesture={pan}>
-          <GlassPanel
-            radius={Radius.xl}
-            style={[styles.sheet, { paddingBottom: insets.bottom + Spacing.four }]}>
-            <View style={[styles.grabber, { backgroundColor: theme.borderStrong }]} />
-            {title ? (
-              <ThemedText variant="heading" style={styles.title}>
-                {title}
-              </ThemedText>
-            ) : null}
+        <GlassPanel radius={Radius.xl} style={styles.sheet}>
+          <GestureDetector gesture={pan}>
+            <View style={styles.handle}>
+              <View style={[styles.grabber, { backgroundColor: theme.borderStrong }]} />
+              {title ? (
+                <ThemedText variant="heading" style={styles.title}>
+                  {title}
+                </ThemedText>
+              ) : null}
+            </View>
+          </GestureDetector>
+
+          <ScrollView
+            style={{ maxHeight: contentMaxHeight }}
+            contentContainerStyle={[
+              styles.content,
+              { paddingBottom: (keyboard.visible ? Spacing.three : insets.bottom) + Spacing.four },
+            ]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            bounces={false}>
             {children}
-          </GlassPanel>
-        </GestureDetector>
+          </ScrollView>
+        </GlassPanel>
       </Animated.View>
     </View>
   );
@@ -122,13 +169,11 @@ export function BottomSheet({ visible, onClose, title, children }: BottomSheetPr
 
 /** A tappable row inside a sheet. */
 export function SheetAction({
-  icon,
   label,
   hint,
   onPress,
   destructive,
 }: {
-  icon: string;
   label: string;
   hint?: string;
   onPress: () => void;
@@ -143,9 +188,6 @@ export function SheetAction({
       onPress={onPress}
       haptic="medium"
       style={[styles.action, { backgroundColor: theme.surface }]}>
-      <View style={[styles.actionIcon, { backgroundColor: theme.surfaceRaised }]}>
-        <ThemedText variant="heading">{icon}</ThemedText>
-      </View>
       <View style={styles.actionCopy}>
         <ThemedText variant="bodyBold" themeColor={destructive ? 'danger' : 'text'}>
           {label}
@@ -172,8 +214,10 @@ const styles = StyleSheet.create({
   },
   sheet: {
     paddingTop: Spacing.two,
+  },
+  handle: {
     paddingHorizontal: Spacing.three,
-    gap: Spacing.two,
+    paddingBottom: Spacing.two,
   },
   grabber: {
     alignSelf: 'center',
@@ -184,21 +228,20 @@ const styles = StyleSheet.create({
   },
   title: {
     paddingHorizontal: Spacing.one,
-    paddingBottom: Spacing.two,
+    paddingTop: Spacing.one,
+  },
+  content: {
+    paddingHorizontal: Spacing.three,
+    gap: Spacing.two,
   },
   action: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
-    padding: Spacing.two + 2,
+    paddingVertical: Spacing.three - 2,
+    paddingHorizontal: Spacing.three,
     borderRadius: Radius.md,
-  },
-  actionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
+    minHeight: 60,
   },
   actionCopy: {
     flex: 1,

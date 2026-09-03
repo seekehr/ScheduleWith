@@ -55,8 +55,6 @@ export type StreakTier = {
   /** Ordinal, 0-5 — handy for scaling anything not listed here. */
   rank: number;
   label: string;
-  /** Emoji shown next to the streak count in the header. */
-  glyph: string;
   /** Gradient for the flame / aura. */
   colors: readonly [string, string, ...string[]];
   /** Confetti pieces on the celebration screen. */
@@ -76,7 +74,6 @@ const TIERS: readonly StreakTier[] = [
     name: 'none',
     rank: 0,
     label: 'No streak yet',
-    glyph: '🌱',
     colors: [Forest[300], Forest[500]],
     confettiCount: 24,
     shockwaves: 0,
@@ -88,7 +85,6 @@ const TIERS: readonly StreakTier[] = [
     name: 'spark',
     rank: 1,
     label: 'Spark',
-    glyph: '✨',
     colors: [Forest[400], Forest[600]],
     confettiCount: 40,
     shockwaves: 1,
@@ -100,7 +96,6 @@ const TIERS: readonly StreakTier[] = [
     name: 'flame',
     rank: 2,
     label: 'Flame',
-    glyph: '🔥',
     colors: [Accent.gold, Accent.amber, Accent.ember],
     confettiCount: 64,
     shockwaves: 2,
@@ -112,7 +107,6 @@ const TIERS: readonly StreakTier[] = [
     name: 'blaze',
     rank: 3,
     label: 'Blaze',
-    glyph: '🔥',
     colors: [Accent.sky, Forest[400], Accent.gold],
     confettiCount: 88,
     shockwaves: 3,
@@ -124,7 +118,6 @@ const TIERS: readonly StreakTier[] = [
     name: 'aurora',
     rank: 4,
     label: 'Aurora',
-    glyph: '🌌',
     colors: [Accent.violet, Accent.sky, Forest[400], Accent.rose],
     confettiCount: 112,
     shockwaves: 4,
@@ -136,7 +129,6 @@ const TIERS: readonly StreakTier[] = [
     name: 'cosmic',
     rank: 5,
     label: 'Cosmic',
-    glyph: '☄️',
     colors: [Accent.rose, Accent.gold, Accent.sky, Accent.violet, Forest[400]],
     confettiCount: 140,
     shockwaves: 5,

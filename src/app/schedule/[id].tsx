@@ -179,32 +179,9 @@ export default function ScheduleEditorScreen() {
             showsVerticalScrollIndicator={false}>
             <View style={styles.identityRow}>
               <TextInput
-                value={schedule.emoji ?? ''}
-                onChangeText={(value) =>
-                  dispatch({
-                    type: 'renameSchedule',
-                    id: schedule.id,
-                    name: schedule.name,
-                    emoji: value.trim() || undefined,
-                  })
-                }
-                placeholder="🌿"
-                placeholderTextColor={theme.textMuted}
-                maxLength={2}
-                style={[
-                  styles.emojiInput,
-                  { backgroundColor: theme.surface, borderColor: theme.border },
-                ]}
-              />
-              <TextInput
                 value={schedule.name}
                 onChangeText={(value) =>
-                  dispatch({
-                    type: 'renameSchedule',
-                    id: schedule.id,
-                    name: value,
-                    emoji: schedule.emoji,
-                  })
+                  dispatch({ type: 'renameSchedule', id: schedule.id, name: value })
                 }
                 placeholder="Schedule name"
                 placeholderTextColor={theme.textMuted}
@@ -252,8 +229,7 @@ export default function ScheduleEditorScreen() {
 
               <AppButton
                 label="Add task"
-                icon="＋"
-                variant="secondary"
+                  variant="secondary"
                 fullWidth
                 onPress={() => {
                   setEditingTask(null);
@@ -394,13 +370,6 @@ const styles = StyleSheet.create({
   identityRow: {
     flexDirection: 'row',
     gap: Spacing.two,
-  },
-  emojiInput: {
-    width: 58,
-    borderWidth: 1,
-    borderRadius: Radius.md,
-    textAlign: 'center',
-    fontSize: 24,
   },
   nameInput: {
     flex: 1,

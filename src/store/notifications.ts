@@ -65,7 +65,7 @@ export async function syncReminders(
   try {
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: 'One hour left ⏳',
+        title: 'One hour left today',
         body:
           remainingTasks > 0
             ? `${remainingTasks} ${remainingTasks === 1 ? 'task' : 'tasks'} still unchecked. Don't break the streak.`
@@ -86,7 +86,7 @@ export async function syncReminders(
   try {
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: 'Still on the list 🌱',
+        title: 'Still on your list',
         body: 'You have unfinished tasks waiting for you.',
       },
       trigger: {

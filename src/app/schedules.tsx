@@ -84,13 +84,11 @@ export default function SchedulesScreen() {
           <View style={styles.actions}>
             <AppButton
               label="Create New Schedule"
-              icon="✨"
               fullWidth
               onPress={() => router.push({ pathname: '/schedule/[id]', params: { id: 'new' } })}
             />
             <AppButton
               label="Load Schedule"
-              icon="📥"
               variant="secondary"
               fullWidth
               onPress={() => void handleImport()}
@@ -140,7 +138,6 @@ function ScheduleCard({
         <PressableScale onPress={onEdit} haptic="light" scaleTo={0.99} style={styles.cardCopy}>
           <View style={styles.cardTitleRow}>
             <ThemedText variant="heading" numberOfLines={1} style={styles.cardTitle}>
-              {schedule.emoji ? `${schedule.emoji} ` : ''}
               {schedule.name}
             </ThemedText>
             {isActive ? (

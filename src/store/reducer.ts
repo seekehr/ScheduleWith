@@ -32,7 +32,7 @@ export type Action =
   | { type: 'setAvatar'; avatarUri?: string }
   | { type: 'patchSettings'; patch: Partial<Settings> }
   | { type: 'addSchedule'; schedule: Schedule; makeActive?: boolean }
-  | { type: 'renameSchedule'; id: string; name: string; emoji?: string }
+  | { type: 'renameSchedule'; id: string; name: string }
   | { type: 'setScheduleTasks'; id: string; tasks: Task[] }
   | { type: 'deleteSchedule'; id: string }
   | { type: 'moveSchedule'; id: string; direction: -1 | 1 }
@@ -92,12 +92,7 @@ export function reducer(state: AppState, action: Action): AppState {
         ...state,
         schedules: state.schedules.map((schedule) =>
           schedule.id === action.id
-            ? {
-                ...schedule,
-                name: action.name.trim() || schedule.name,
-                emoji: action.emoji,
-                updatedAt: Date.now(),
-              }
+            ? { ...schedule, name: action.name.trim() || schedule.name, updatedAt: Date.now() }
             : schedule
         ),
       };
@@ -369,7 +364,7 @@ export function dayStatus(state: AppState, now: number): DayStatus {
   return state.graceUntil !== undefined && now < state.graceUntil ? 'grace' : 'expired';
 }
 
-export function makeSchedule(name: string, emoji?: string, tasks: Task[] = []): Schedule {
+export function makeSchedule(name: string, tasks: Task[] = []): Schedule {
   const now = Date.now();
-  return { id: makeId(), name: name.trim(), emoji, tasks, createdAt: now, updatedAt: now };
+  return { id: makeId(), name: name.trim(), tasks, createdAt: now, updatedAt: now };
 }

@@ -139,7 +139,7 @@ function CelebrationScreen() {
           </ThemedText>
           {today ? (
             <ThemedText variant="label" color={Forest[700]} style={styles.centered}>
-              +{today.xpEarned} XP today {tier.glyph}
+              +{today.xpEarned} XP today
             </ThemedText>
           ) : null}
         </Animated.View>

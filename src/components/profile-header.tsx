@@ -39,6 +39,7 @@ export function ProfileHeader({ onPress }: ProfileHeaderProps) {
       dimTo={1}
       accessibilityRole="button"
       accessibilityLabel={`${profile.displayName}, level ${level.level}, ${profile.streak} day streak`}
+      accessibilityHint="Opens schedules and settings"
       style={styles.pressable}>
       <GlassPanel radius={Radius.pill} style={styles.panel}>
         <Avatar uri={profile.avatarUri} name={profile.displayName} />
@@ -70,7 +71,7 @@ export function ProfileHeader({ onPress }: ProfileHeaderProps) {
 
 function Avatar({ uri, name }: { uri?: string; name: string }) {
   const theme = useTheme();
-  const initial = name.trim().charAt(0).toUpperCase() || '🙂';
+  const initial = name.trim().charAt(0).toUpperCase();
 
   if (uri) {
     return (

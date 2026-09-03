@@ -15,7 +15,6 @@ export type Task = {
 export type Schedule = {
   id: string;
   name: string;
-  emoji?: string;
   tasks: Task[];
   createdAt: number;
   updatedAt: number;

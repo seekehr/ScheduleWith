@@ -115,7 +115,6 @@ export function parseSchedule(input: unknown): Schedule | null {
   return {
     id: asString(input.id, '') || makeId(),
     name: name.slice(0, 60),
-    emoji: optionalString(input.emoji),
     tasks: asArray(input.tasks).map(parseTask).filter(isPresent),
     createdAt: typeof input.createdAt === 'number' ? input.createdAt : now,
     updatedAt: typeof input.updatedAt === 'number' ? input.updatedAt : now,

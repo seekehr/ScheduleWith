@@ -1,6 +1,9 @@
 /**
- * The streak badge: a pulsing, tier-coloured aura behind the day count, with
- * orbiting embers once the streak is long enough to have earned them.
+ * The streak badge: the day count sitting in a pulsing, tier-coloured aura,
+ * with orbiting embers once the streak is long enough to have earned them.
+ *
+ * The tier is communicated by colour, pulse rate and orbit rather than by an
+ * icon — the number is the only glyph on it.
  */
 
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,7 +21,6 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { StreakTier } from '@/store/leveling';
 
@@ -26,17 +28,16 @@ export type StreakFlameProps = {
   streak: number;
   tier: StreakTier;
   size?: number;
-  /** Hides the numeric label, for use as a decorative accent. */
-  glyphOnly?: boolean;
 };
 
-export function StreakFlame({ streak, tier, size = 40, glyphOnly = false }: StreakFlameProps) {
+export function StreakFlame({ streak, tier, size = 40 }: StreakFlameProps) {
   const theme = useTheme();
   const pulse = useSharedValue(0);
   const spin = useSharedValue(0);
 
   // Higher tiers breathe faster and swing wider.
   const period = 1800 - tier.rank * 180;
+  const lit = tier.rank > 0;
 
   useEffect(() => {
     pulse.value = withRepeat(
@@ -72,11 +73,14 @@ export function StreakFlame({ streak, tier, size = 40, glyphOnly = false }: Stre
     transform: [{ scale: 1 + pulse.value * 0.05 }],
   }));
 
-  const showAura = tier.rank > 0;
-
   return (
-    <View style={[styles.root, { width: size * 1.6, height: size * 1.6 }]}>
-      {showAura ? (
+    <View
+      style={[styles.root, { width: size * 1.6, height: size * 1.6 }]}
+      accessibilityRole="text"
+      accessibilityLabel={
+        streak === 0 ? 'No streak yet' : `${streak} day streak, ${tier.label} tier`
+      }>
+      {lit ? (
         <Animated.View
           style={[
             styles.aura,
@@ -111,11 +115,12 @@ export function StreakFlame({ streak, tier, size = 40, glyphOnly = false }: Stre
             width: size,
             height: size,
             borderRadius: size / 2,
-            backgroundColor: showAura ? 'transparent' : theme.surface,
+            backgroundColor: lit ? 'transparent' : theme.surface,
+            borderColor: lit ? 'transparent' : theme.border,
           },
           coreStyle,
         ]}>
-        {showAura ? (
+        {lit ? (
           <LinearGradient
             colors={tier.colors}
             start={{ x: 0, y: 0 }}
@@ -123,18 +128,13 @@ export function StreakFlame({ streak, tier, size = 40, glyphOnly = false }: Stre
             style={[StyleSheet.absoluteFill, { borderRadius: size / 2 }]}
           />
         ) : null}
-        <ThemedText style={{ fontSize: size * 0.42, lineHeight: size * 0.56 }}>
-          {tier.glyph}
+        <ThemedText
+          variant="number"
+          color={lit ? '#FFFFFF' : theme.textMuted}
+          style={{ fontSize: size * 0.42, lineHeight: size * 0.52 }}>
+          {streak}
         </ThemedText>
       </Animated.View>
-
-      {glyphOnly ? null : (
-        <View style={[styles.count, { backgroundColor: theme.surfaceRaised }]}>
-          <ThemedText variant="caption" themeColor={streak > 0 ? 'text' : 'textMuted'}>
-            {streak}
-          </ThemedText>
-        </View>
-      )}
     </View>
   );
 }
@@ -176,22 +176,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+    borderWidth: 1,
   },
   ember: {
     position: 'absolute',
     width: 5,
     height: 5,
     borderRadius: 2.5,
-  },
-  count: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    minWidth: 20,
-    paddingHorizontal: Spacing.one,
-    paddingVertical: 1,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
