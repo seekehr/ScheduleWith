@@ -42,8 +42,8 @@ import { pickAvatar } from '@/store/media';
 
 type Step = 'welcome' | 'name' | 'avatar';
 
-const WELCOME_INK = '#000000';
-const WELCOME_PAPER = '#FFFFFF';
+/** Text that sits on the forest-green orb and button — white in both themes. */
+const ON_FOREST = '#FFFFFF';
 
 export function OnboardingFlow() {
   const dispatch = useDispatch();
@@ -78,6 +78,12 @@ export function OnboardingFlow() {
 /* -------------------------------------------------------------------------- */
 
 function WelcomeStep({ onNext }: { onNext: () => void }) {
+  // The spec asks for black on white, and that is exactly what the light theme
+  // is. Reading it from the theme instead of hard-coding it means a phone set
+  // to dark mode gets the dark-gray equivalent — without it, this screen
+  // flashed white and then dropped into dark gray on the very next tap, and
+  // the themed status bar drew light icons over the white.
+  const theme = useTheme();
   const bloom = useSharedValue(0);
   const drift = useSharedValue(0);
 
@@ -107,7 +113,7 @@ function WelcomeStep({ onNext }: { onNext: () => void }) {
   }));
 
   return (
-    <View style={[styles.fill, { backgroundColor: WELCOME_PAPER }]}>
+    <View style={[styles.fill, { backgroundColor: theme.background }]}>
       <SafeAreaView style={styles.welcomeSafeArea}>
         <View style={styles.welcomeArt}>
           <Animated.View style={[styles.welcomeRing, ringStyle]} />
@@ -118,7 +124,7 @@ function WelcomeStep({ onNext }: { onNext: () => void }) {
               end={{ x: 0.9, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
-            <ThemedText variant="display" color={WELCOME_PAPER} style={styles.welcomeGlyph}>
+            <ThemedText variant="display" color={ON_FOREST} style={styles.welcomeGlyph}>
               ✓
             </ThemedText>
           </Animated.View>
@@ -126,17 +132,17 @@ function WelcomeStep({ onNext }: { onNext: () => void }) {
 
         <View style={styles.welcomeCopy}>
           <Animated.View entering={FadeInDown.delay(420).duration(560).springify()}>
-            <ThemedText variant="display" color={WELCOME_INK} style={styles.centered}>
+            <ThemedText variant="display" style={styles.centered}>
               Welcome to
             </ThemedText>
           </Animated.View>
           <Animated.View entering={FadeInDown.delay(600).duration(560).springify()}>
-            <ThemedText variant="display" color={WELCOME_INK} style={styles.centered}>
+            <ThemedText variant="display" style={styles.centered}>
               ScheduleWith
             </ThemedText>
           </Animated.View>
           <Animated.View entering={FadeIn.delay(900).duration(500)}>
-            <ThemedText variant="body" color="#4A4A4A" style={styles.centered}>
+            <ThemedText variant="body" themeColor="textSecondary" style={styles.centered}>
               One schedule. Every day. Keep the streak alive.
             </ThemedText>
           </Animated.View>
@@ -147,8 +153,8 @@ function WelcomeStep({ onNext }: { onNext: () => void }) {
             accessibilityRole="button"
             onPress={onNext}
             haptic="medium"
-            style={styles.welcomeNext}>
-            <ThemedText variant="heading" color={WELCOME_PAPER}>
+            style={[styles.welcomeNext, { backgroundColor: theme.accent }]}>
+            <ThemedText variant="heading" color={ON_FOREST}>
               Next ›
             </ThemedText>
           </PressableScale>
@@ -360,7 +366,6 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.five,
   },
   welcomeNext: {
-    backgroundColor: Forest[700],
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.six,
     borderRadius: Radius.pill,
