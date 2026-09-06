@@ -3,14 +3,15 @@
     "name": "ScheduleWith",
     "slug": "ScheduleWith",
     "version": "1.0.0",
-    "platforms": ["ios"],
+    "platforms": [
+      "ios"
+    ],
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/icon.jpg",
     "scheme": "schedulewith",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.schedulewith.app",
+      "bundleIdentifier": "com.seekehr.schedulewith",
       "supportsTablet": false,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -49,6 +50,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ab8efc31-25bb-4e5f-bef2-84e3a73eedb4"
+      }
     }
   }
 }

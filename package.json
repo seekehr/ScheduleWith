@@ -36,7 +36,7 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "start": "expo start",
+    "start": "node init && expo start",
     "ios": "expo start --ios",
     "typecheck": "tsc --noEmit",
     "bundle": "expo export --platform ios",
