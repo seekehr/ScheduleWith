@@ -43,6 +43,6 @@ example
 /android
 
 .claude/
-.vscode/
 .idea/
 .cursor/
+config.bat
