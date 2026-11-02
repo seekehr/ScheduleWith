@@ -36,3 +36,5 @@ Edge Cases:
 - Items, when moved to the Completed section, should be able to be un-completed (removing tick) aswell assuming the user accidentally clicked on them.
 - A schedule can be edited at any time, but you need to preserve historical information. User completes both → successful day. Then on Tuesday they edit the schedule and delete Workout. That shouldn't somehow alter Monday's record. So I'd store a lightweight **daily completion record** separately from the current schedule.
 - Etc.
+
+;D
